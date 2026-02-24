@@ -5,23 +5,25 @@ import random
 from pathlib import Path
 from . import config
 from .llm import get_auth_headers
-from .prompts import ACTIONS, OUTFITS, STYLES, BACKGROUNDS
+from .prompts import ACTIONS, OUTFITS, STYLES, BACKGROUNDS, CHARACTERS
 
 
 def generate_and_download_goblin_image() -> Path | None:
+    selected_char = random.choice(CHARACTERS)
     selected_action = random.choice(ACTIONS)
     selected_outfit = random.choice(OUTFITS)
     selected_style = random.choice(STYLES)
     selected_bg = random.choice(BACKGROUNDS)
 
     print(
-        f"🎲 Image Recipe: {selected_outfit}, {selected_action}, {selected_bg} ({selected_style})"
+        f"🎲 Image Recipe: {selected_char} {selected_outfit}, {selected_action}, {selected_bg} ({selected_style})"
     )
 
-    # --- CHANGED: Now generating a degenerate goblin ---
+    # The prompt is now a completely random fever dream ---
     image_prompt = (
-        f"A degenerate green goblin {selected_outfit} {selected_action} {selected_bg}, "
-        f"crazed, anxious, sweating expression, {selected_style}"
+        f"{selected_char} {selected_outfit} {selected_action} {selected_bg}. "
+        f"Crazed, anxious, losing their mind over a sports betting parlay, "
+        f"{selected_style}."
     )
 
     img_seed = int(time.time()) + random.randint(1, 1000)

@@ -37,7 +37,7 @@ def generate_parlay_content() -> tuple[str, Path | None]:
     print("🎲 Constructing today's mortal locks...")
 
     # Pull extra games so Python has room to filter
-    games = get_live_games(num_games=6)
+    games = get_live_games(max_games=15)
     if not games:
         print("⚠️ No games found. Using fallback.")
         return random.choice(FALLBACK_QUOTES), None
@@ -87,7 +87,7 @@ def generate_parlay_content() -> tuple[str, Path | None]:
         calc_int = int(calc_str)
 
         # Keep the final ticket reasonable
-        if -200 <= calc_int <= 350:
+        if -200 <= calc_int <= 400:
             chosen_legs = sample
             final_odds_str = calc_str
             break

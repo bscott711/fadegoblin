@@ -116,3 +116,18 @@ BACKGROUNDS = [
     "in the back of a moving taxi",
     "in a neon-lit alleyway",
 ]
+
+CHARACTERS = [
+    "a sweating walrus",
+    "a stressed-out medieval knight",
+    "a deeply concerned garden gnome",
+    "a chaotic raccoon",
+    "a disgruntled 1920s mobster",
+    "an anxious alien tourist",
+    "a tired Renaissance aristocrat",
+    "a feral math teacher",
+    "a panicked hot dog vendor",
+    "a very nervous golden retriever",
+    "a 19th-century ghost",
+    "a disgruntled wizard",
+]
