@@ -1,14 +1,24 @@
 import argparse
 import os
+import random
 from datetime import datetime
+
 from atproto import Client, models
 
 from . import config
-from .generator import generate_parlay_content
+from .betting import build_parlay
+from .generator import generate_post_content
+from .image import download_goblin_image, generate_goblin_prompt
+from .odds import get_live_games
+from .prompts import FALLBACK_QUOTES
 
 
-def main():
-    config.check_env()
+def main() -> None:
+    try:
+        config.validate_config()
+    except ValueError as e:
+        print(f"Error: {e}")
+        return
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -22,8 +32,24 @@ def main():
         f"--- Starting FadeGoblin run at {datetime.now()} (Dry Run: {args.dry_run}) ---"
     )
 
-    # Generate the unhinged parlay and optional goblin image
-    post_text, image_path = generate_parlay_content()
+    print("🎲 Fetching live games...")
+    games = get_live_games(max_games=15)
+
+    if games:
+        print("🎲 Constructing today's mortal locks...")
+        chosen_legs, final_odds_str = build_parlay(games)
+        post_text = generate_post_content(chosen_legs, final_odds_str)
+    else:
+        print("⚠️ No games found. Using fallback.")
+        post_text = random.choice(FALLBACK_QUOTES)
+
+    image_path = None
+    if random.random() < config.TEXT_ONLY_ODDS:
+        print("   🎲 Dice Roll: decided on TEXT ONLY mode. Skipping image.")
+    else:
+        prompt = generate_goblin_prompt()
+        target_path = config.BASE_DIR / "temp_meme.jpg"
+        image_path = download_goblin_image(prompt, target_path)
 
     if args.dry_run:
         print("\n🚫 DRY RUN MODE ENABLED. SKIPPING UPLOAD.")
@@ -38,7 +64,7 @@ def main():
     try:
         print("Connecting to Bluesky...")
         client = Client()
-        client.login(config.BOT_HANDLE, config.APP_PASSWORD)
+        client.login(config.BOT_HANDLE, config.APP_PASSWORD)  # type: ignore
 
         if image_path and image_path.exists():
             print("Uploading goblin image...")

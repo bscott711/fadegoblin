@@ -1,14 +1,16 @@
-import time
-import requests
-import urllib.parse
 import random
+import time
+import urllib.parse
 from pathlib import Path
-from . import config
+
+import requests
+
 from .llm import get_auth_headers
-from .prompts import ACTIONS, OUTFITS, STYLES, BACKGROUNDS, CHARACTERS
+from .prompts import ACTIONS, BACKGROUNDS, CHARACTERS, OUTFITS, STYLES
 
 
-def generate_and_download_goblin_image() -> Path | None:
+def generate_goblin_prompt() -> str:
+    """Generates a random prompt for the goblin image."""
     selected_char = random.choice(CHARACTERS)
     selected_action = random.choice(ACTIONS)
     selected_outfit = random.choice(OUTFITS)
@@ -16,36 +18,42 @@ def generate_and_download_goblin_image() -> Path | None:
     selected_bg = random.choice(BACKGROUNDS)
 
     print(
-        f"🎲 Image Recipe: {selected_char} {selected_outfit}, {selected_action}, {selected_bg} ({selected_style})"
+        f"🎲 Image Recipe: {selected_char} {selected_outfit}, {selected_action}, "
+        f"{selected_bg} ({selected_style})"
     )
 
-    # The prompt is now a completely random fever dream ---
-    image_prompt = (
+    return (
         f"{selected_char} {selected_outfit} {selected_action} {selected_bg}. "
         f"Crazed, anxious, losing their mind over a sports betting parlay, "
         f"{selected_style}."
     )
 
-    img_seed = int(time.time()) + random.randint(1, 1000)
-    safe_prompt = urllib.parse.quote(image_prompt)
 
-    image_url = f"https://gen.pollinations.ai/image/{safe_prompt}?seed={img_seed}&width=768&height=768&nologo=true&model=flux"
-    image_path = config.BASE_DIR / "temp_meme.jpg"
+def download_goblin_image(prompt: str, output_path: Path) -> Path | None:
+    """Downloads an AI-generated image from Pollinations based on the prompt."""
+    img_seed = int(time.time()) + random.randint(1, 1000)
+    safe_prompt = urllib.parse.quote(prompt)
+
+    image_url = (
+        f"https://gen.pollinations.ai/image/{safe_prompt}"
+        f"?seed={img_seed}&width=768&height=768&nologo=true&model=flux"
+    )
 
     for attempt in range(3):
         try:
             print(f"🎨 Downloading image (Attempt {attempt + 1})...")
             response = requests.get(image_url, headers=get_auth_headers(), timeout=45)
-            if response.status_code == 200:
-                with open(image_path, "wb") as f:
-                    f.write(response.content)
-                return image_path
-            else:
-                print(
-                    f"   ⚠️ Image Error (Attempt {attempt + 1}): {response.status_code}"
-                )
-        except Exception as e:
-            print(f"   ⚠️ Image Connection Failed (Attempt {attempt + 1}): {e}")
+            response.raise_for_status()
+
+            with open(output_path, "wb") as f:
+                f.write(response.content)
+            return output_path
+
+        except requests.RequestException as e:
+            status = getattr(e.response, "status_code", "Unknown")
+            print(
+                f"   ⚠️ Image Connection Failed (Attempt {attempt + 1}): {status} - {e}"
+            )
 
         if attempt < 2:
             time.sleep(10)

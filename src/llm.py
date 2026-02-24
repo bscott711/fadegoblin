@@ -1,35 +1,44 @@
-import time
-import requests
-import re
-from . import config
 import json
+import re
+import time
+from typing import Any
+
+import requests
+
+from . import config
 
 
-def get_auth_headers():
+def get_auth_headers() -> dict[str, str]:
+    """Generate authentication headers for Pollinations API."""
     headers = {"Content-Type": "application/json"}
     if config.POLLINATIONS_API_KEY:
         headers["Authorization"] = f"Bearer {config.POLLINATIONS_API_KEY}"
     return headers
 
 
-def get_ai_text(prompt, retries=3):
+def _make_pollinations_request(prompt: str, attempt: int) -> requests.Response:
+    """Helper to make the POST request to the LLM API."""
+    seed = int(time.time()) + attempt
+    payload = {
+        "model": "openai",
+        "messages": [{"role": "user", "content": prompt}],
+        "seed": seed,
+    }
+    return requests.post(
+        "https://gen.pollinations.ai/v1/chat/completions",
+        headers=get_auth_headers(),
+        json=payload,
+        timeout=180,
+    )
+
+
+def get_ai_text(prompt: str, retries: int = 3) -> str | None:
+    """Generates text from the Pollinations LLM API with retries."""
     retry_delays = [60, 180, 300]
 
     for attempt in range(retries):
         try:
-            seed = int(time.time()) + attempt
-            payload = {
-                "model": "openai",
-                "messages": [{"role": "user", "content": prompt}],
-                "seed": seed,
-            }
-
-            response = requests.post(
-                "https://gen.pollinations.ai/v1/chat/completions",
-                headers=get_auth_headers(),
-                json=payload,
-                timeout=180,
-            )
+            response = _make_pollinations_request(prompt, attempt)
 
             if response.status_code == 200:
                 data = response.json()
@@ -54,10 +63,11 @@ def get_ai_text(prompt, retries=3):
                 if len(text) < 10 or "Statement:" in text:
                     raise ValueError("Generated text was too short or malformed")
                 return text
-            else:
-                print(
-                    f"   ⚠️ API Error (Attempt {attempt + 1}): {response.status_code} - {response.text[:50]}"
-                )
+
+            print(
+                f"   ⚠️ API Error (Attempt {attempt + 1}): "
+                f"{response.status_code} - {response.text[:50]}"
+            )
 
         except Exception as e:
             print(f"   ⚠️ Connection Failed (Attempt {attempt + 1}): {e}")
@@ -70,24 +80,13 @@ def get_ai_text(prompt, retries=3):
     return None
 
 
-def get_ai_json(prompt, retries=3):
+def get_ai_json(prompt: str, retries: int = 3) -> dict[str, Any] | None:
+    """Generates JSON from the Pollinations LLM API with retries."""
     retry_delays = [60, 180, 300]
 
     for attempt in range(retries):
         try:
-            seed = int(time.time()) + attempt
-            payload = {
-                "model": "openai",
-                "messages": [{"role": "user", "content": prompt}],
-                "seed": seed,
-            }
-
-            response = requests.post(
-                "https://gen.pollinations.ai/v1/chat/completions",
-                headers=get_auth_headers(),
-                json=payload,
-                timeout=180,
-            )
+            response = _make_pollinations_request(prompt, attempt)
 
             if response.status_code == 200:
                 data = response.json()
@@ -101,7 +100,8 @@ def get_ai_json(prompt, retries=3):
                     return json.loads(text)
                 except json.JSONDecodeError:
                     print(
-                        f"   ⚠️ Failed to parse JSON on Attempt {attempt + 1}: {text[:50]}..."
+                        f"   ⚠️ Failed to parse JSON on Attempt {attempt + 1}: "
+                        f"{text[:50]}..."
                     )
             else:
                 print(f"   ⚠️ API Error (Attempt {attempt + 1}): {response.status_code}")
