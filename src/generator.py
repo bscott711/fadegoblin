@@ -57,12 +57,13 @@ def generate_post_content(
         f"Persona: {selected_style['prompt']}\n"
         f"Task: Write a short social media post announcing your bet.\n"
         f"ADAPT this specific bizarre logic into your own words: '{chosen_theme}'.\n"
-        f"You are locking in this exact ticket:\n{locked_bet_text}\n"
+        f"The bet is on:\n{locked_bet_text}\n"
         f"CRITICAL RULES:\n"
-        f"1. Keep it under 250 characters.\n"
-        f"2. Do NOT say the teams in the parlay are playing each other. They are in completely separate games.\n"
-        f"3. Do not write out the odds numbers. Do not use hashtags.\n"
+        f"1. Keep it under 200 characters.\n"
+        f"2. Do NOT say the teams are playing each other.\n"
+        f"3. Do NOT list the actual ticket, odds, or use hashtags. The system will append the ticket details automatically at the end.\n"
         f"4. NEVER ask questions, apologize, offer options, or break character.\n"
+        f"5. DO NOT start the post with 'Locked', 'Locking in', or 'Placing'. Jump straight into the logic.\n"
         f"Output ONLY the final in-character text, nothing else."
     )
 
@@ -72,5 +73,10 @@ def generate_post_content(
         print("⚠️ API broke character. Using fallback.")
         quote = random.choice(FALLBACK_QUOTES)
 
-    final_post = f"{quote}\n\n{bet_type}: {final_odds_str}"
+    # Clean up the quote just in case it added quotes around its response
+    quote = quote.strip('"').strip("'")
+
+    # The system explicitly appends the exact ticket and odds at the very end
+    final_post = f"{quote}\n\nTicket:\n{locked_bet_text}\n{bet_type}: {final_odds_str}"
+
     return final_post

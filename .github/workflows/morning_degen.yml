@@ -25,7 +25,6 @@ jobs:
 
       - name: Run Degen
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           BOT_HANDLE: ${{ secrets.BOT_HANDLE }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
