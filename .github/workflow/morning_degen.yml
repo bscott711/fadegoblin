@@ -1,5 +1,33 @@
+name: Morning Degen
+on:
   schedule:
-    # 13:00 UTC = 6:00 AM MST (Morning degenerate picks)
-    - cron: '0 13 * * *'
-  workflow_dispatch:
-  run: bot --mode degen
+    # Runs at 12:00 UTC (06:00 AM MDT) every day
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  snipe-bets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Run Degen
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BOT_HANDLE: ${{ secrets.BOT_HANDLE }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          uv run bot --mode degen

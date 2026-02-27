@@ -1,6 +1,33 @@
-# Runs at 12 PM every day (after AlgoEPL has calculated the slate)
+name: Afternoon Sniper
+on:
   schedule:
+    # Runs at 18:00 UTC (12:00 PM MDT) every day
     - cron: '0 18 * * *'
-  env:
-    DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  run: bot --mode sniper
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  snipe-bets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Run EV Sniper
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BOT_HANDLE: ${{ secrets.BOT_HANDLE }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          uv run bot --mode sniper
