@@ -9,13 +9,13 @@ BOT_HANDLE = os.getenv("BOT_HANDLE")
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
 ODDS_API_KEY = os.getenv("ODDS_API_KEY")
+DATABASE_URL = os.getenv("DATABASE_URL")  # [NEW] Added for EV Sniper
 
 TEXT_ONLY_ODDS = 0.1
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def validate_config() -> None:
-    """Validate that all required environment variables are present."""
     missing = []
     if not BOT_HANDLE:
         missing.append("BOT_HANDLE")
@@ -28,6 +28,3 @@ def validate_config() -> None:
         raise ValueError(
             f"Missing required environment variables: {', '.join(missing)}"
         )
-
-    if not POLLINATIONS_API_KEY:
-        print("⚠️ Warning: POLLINATIONS_API_KEY not found. Requests may fail.")

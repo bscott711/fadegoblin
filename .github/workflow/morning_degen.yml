@@ -1,0 +1,5 @@
+  schedule:
+    # 13:00 UTC = 6:00 AM MST (Morning degenerate picks)
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+  run: bot --mode degen

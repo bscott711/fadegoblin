@@ -1,0 +1,6 @@
+# Runs at 12 PM every day (after AlgoEPL has calculated the slate)
+  schedule:
+    - cron: '0 18 * * *'
+  env:
+    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  run: bot --mode sniper
