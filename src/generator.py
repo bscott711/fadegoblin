@@ -13,12 +13,9 @@ def generate_post_content(
     if not chosen_legs:
         return random.choice(FALLBACK_QUOTES)
 
-    bet_type = "Parlay Odds" if len(chosen_legs) > 1 else "Odds"
-
-    leg_descriptions = [
-        f"{leg['pick']} to win their matchup ({leg['game']})" for leg in chosen_legs
-    ]
-    locked_bet_text = "\n".join([f"- {desc}" for desc in leg_descriptions])
+    # SHRUNK: Extremely compact one-line ticket
+    leg_descriptions = [f"{leg['pick']} ({leg['game']})" for leg in chosen_legs]
+    locked_bet_text = " + ".join(leg_descriptions)
 
     if len(chosen_legs) > 1:
         bet_summary = "a parlay on: " + " AND ".join(
@@ -27,7 +24,7 @@ def generate_post_content(
     else:
         bet_summary = "a straight bet on: " + chosen_legs[0]["pick"]
 
-    print(f"📈 Locked Ticket ({final_odds_str}):\n{locked_bet_text}")
+    print(f"📈 Locked Ticket: {locked_bet_text} [{final_odds_str}]")
 
     # --- PERSONA & THEME INCEPTION ---
     current_day = datetime.now().weekday()
@@ -54,16 +51,18 @@ def generate_post_content(
 
     # --- FINAL TWEET GENERATION ---
     full_prompt = (
+        f"You are FadeGoblin, a chaotic, hyper-confident, degenerate sports bettor who completely embodies the randomly assigned persona.\n"
         f"Persona: {selected_style['prompt']}\n"
-        f"Task: Write a short social media post announcing your bet.\n"
+        f"Task: Write a short, unhinged social media post announcing your bet.\n"
         f"ADAPT this specific bizarre logic into your own words: '{chosen_theme}'.\n"
-        f"The bet is on:\n{locked_bet_text}\n"
-        f"CRITICAL RULES:\n"
-        f"1. Keep it under 200 characters.\n"
-        f"2. Do NOT say the teams are playing each other.\n"
-        f"3. Do NOT list the actual ticket, odds, or use hashtags. The system will append the ticket details automatically at the end.\n"
-        f"4. NEVER ask questions, apologize, offer options, or break character.\n"
-        f"5. DO NOT start the post with 'Locked', 'Locking in', or 'Placing'. Jump straight into the logic.\n"
+        f"The bet is on:\n{locked_bet_text}\n\n"
+        f"RULES FOR THE TWEET:\n"
+        f"1. NEVER break character. Be chaotic and highly confident. Keep it STRICTLY under 250 characters.\n"
+        f"2. DO NOT write a clinical summary. Write a punchy, unhinged rant.\n"
+        f"3. WEAVE the exact bet naturally into your manic rant.\n"
+        f"4. DO NOT append a formal ticket or odds list at the bottom. The system will do this automatically.\n"
+        f"5. DO NOT start with 'Locked', 'Locking in', or 'Placing'. Jump straight into the logic.\n"
+        f"6. Use 1-2 relevant emojis, but don't overdo it.\n\n"
         f"Output ONLY the final in-character text, nothing else."
     )
 
@@ -76,7 +75,7 @@ def generate_post_content(
     # Clean up the quote just in case it added quotes around its response
     quote = quote.strip('"').strip("'")
 
-    # The system explicitly appends the exact ticket and odds at the very end
-    final_post = f"{quote}\n\nTicket:\n{locked_bet_text}\n{bet_type}: {final_odds_str}"
+    # The system explicitly appends the exact compact ticket at the very end
+    final_post = f"{quote}\n\n{locked_bet_text} [{final_odds_str}]"
 
     return final_post
