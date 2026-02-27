@@ -23,3 +23,4 @@ temp_meme.jpg
 # OS & IDE Clutter
 .DS_Store
 .vscode/
+.ruff_cache/
