@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # Allows manual trigger
 
 jobs:
-  snipe-bets:
+  degen-bets:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -18,10 +18,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: ".python-version"
+      - name: "Install dependencies"
+        run: uv sync --frozen
 
       - name: Run Degen
         env:
