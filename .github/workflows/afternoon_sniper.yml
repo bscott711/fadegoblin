@@ -27,5 +27,6 @@ jobs:
           BOT_HANDLE: ${{ secrets.BOT_HANDLE }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          POLLINATIONS_API_KEY: ${{secrets.POLLINATIONS_API_KEY}}
         run: |
           uv run bot --mode sniper
