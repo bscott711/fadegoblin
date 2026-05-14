@@ -86,6 +86,11 @@ ACTIONS = [
     "hiding from a bookie under a table",
     "biting fingernails down to the bone",
     "staring blankly into the void after a bad beat",
+    "smashing a computer monitor with a baseball bat",
+    "conducting a seance with a crystal ball and a parlay card",
+    "floating in a zero-gravity sportsbook",
+    "hacking into a giant stadium scoreboard",
+    "lighting a cigar with a burning hundred-dollar bill",
 ]
 
 OUTFITS = [
@@ -96,6 +101,10 @@ OUTFITS = [
     "wearing a bathrobe and sunglasses indoors",
     "wearing a tin foil hat and a trench coat",
     "wearing a visor and holding a cigar",
+    "wearing a gold-plated tracksuit",
+    "wearing a futuristic visor with digital betting lines scrolling across it",
+    "wearing a superhero cape made of losing parlay slips",
+    "wearing a literal money suit made of crumpled dollars",
 ]
 
 STYLES = [
@@ -106,6 +115,10 @@ STYLES = [
     "pixel art style, 8-bit",
     "Ralph Steadman gonzo illustration style",
     "dark cyberpunk neon style",
+    "3D render, Unreal Engine 5, cinematic lighting",
+    "vibrant pop-art comic book style",
+    "surrealist Salvador Dali dreamscape",
+    "explosive cinematic anime style",
 ]
 
 BACKGROUNDS = [
@@ -115,6 +128,10 @@ BACKGROUNDS = [
     "in an empty stadium at midnight",
     "in the back of a moving taxi",
     "in a neon-lit alleyway",
+    "on the surface of the moon with a telescope pointed at a stadium",
+    "in a giant vault filled with gold coins",
+    "inside a server room with green matrix code falling",
+    "on top of a moving bullet train",
 ]
 
 CHARACTERS = [
@@ -130,4 +147,9 @@ CHARACTERS = [
     "a very nervous golden retriever",
     "a 19th-century ghost",
     "a disgruntled wizard",
+    "a cyborg betting goblin",
+    "a mutant lizard in a tuxedo",
+    "a hyper-intelligent ape with a diamond necklace",
+    "a goblin sports agent with 6 arms",
+    "a glowing ethereal sports god",
 ]

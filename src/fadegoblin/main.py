@@ -2,8 +2,10 @@ import argparse
 import os
 import random
 from datetime import datetime
+from pathlib import Path
 
 from atproto import Client, models
+from PIL import Image
 
 from fadegoblin import config
 from fadegoblin.betting import build_parlay
@@ -59,19 +61,21 @@ def _run_degen(dry_run: bool) -> None:
         post_text = random.choice(FALLBACK_QUOTES)
 
     # --- Image Logic ---
-    image_path = None
+    image_paths = []
     if random.random() < config.TEXT_ONLY_ODDS:
         print("   🎲 Dice Roll: decided on TEXT ONLY mode. Skipping image.")
     else:
         prompt = generate_goblin_prompt()
         target_path = config.BASE_DIR / "temp_meme.jpg"
-        image_path = download_goblin_image(prompt, target_path)
+        img_path = download_goblin_image(prompt, target_path)
+        if img_path:
+            image_paths.append(img_path)
 
-    _post_to_bluesky(post_text, image_path, dry_run)
+    _post_to_bluesky(post_text, image_paths, dry_run)
 
 
 def _run_sniper(dry_run: bool) -> None:
-    """Sniper Mode: all +EV bets on a card, random POTD gets the writeup."""
+    """Sniper Mode: overlay the bet card onto a custom AI goblin image."""
     print("🎯 Mode: Sniper. Checking database for +EV bets...")
     all_legs, db_ids_to_update = get_sniper_bets()
 
@@ -81,23 +85,63 @@ def _run_sniper(dry_run: bool) -> None:
 
     print(f"📋 Found {len(all_legs)} +EV plays on the board.")
 
-    # Randomly select a Play of the Day — the goblin picks on vibes, not math
+    # Randomly select a Play of the Day
     potd_index = random.randint(0, len(all_legs) - 1)
     potd_leg = all_legs[potd_index]
 
-    # --- Render the bet card image ---
+    # 1. Render the bet card (transparent PNG)
     card_path = render_bet_card(all_legs, potd_index)
+
+    # 2. Generate Goblin background image
+    prompt = generate_goblin_prompt()
+    bg_target_path = config.BASE_DIR / "temp_bg.jpg"
+    goblin_bg_path = download_goblin_image(prompt, bg_target_path)
+
+    image_paths = []
+    if goblin_bg_path and card_path:
+        # 3. Create the composite overlay
+        try:
+            print("🎨 Creating composite overlay image...")
+            bg_img = Image.open(goblin_bg_path).convert("RGBA")
+            card_img = Image.open(card_path).convert("RGBA")
+
+            # Position: bottom-centered with a small margin
+            bg_w, bg_h = bg_img.size
+            card_w, card_h = card_img.size
+            
+            x = (bg_w - card_w) // 2
+            y = bg_h - card_h - 20 # 20px margin from bottom
+
+            # Composite
+            combined = Image.new("RGBA", bg_img.size)
+            combined.paste(bg_img, (0, 0))
+            combined.alpha_composite(card_img, (x, y))
+
+            # Save final
+            final_path = config.BASE_DIR / "temp_sniper_post.png"
+            combined.convert("RGB").save(final_path, "PNG")
+            image_paths.append(final_path)
+
+            # Cleanup fragments
+            os.remove(goblin_bg_path)
+            os.remove(card_path)
+        except Exception as e:
+            print(f"⚠️ Overlay failed: {e}. Falling back to original paths.")
+            image_paths = [goblin_bg_path, card_path]
+    elif goblin_bg_path:
+        image_paths.append(goblin_bg_path)
+    elif card_path:
+        image_paths.append(card_path)
 
     # --- Generate unhinged text for the POTD only ---
     post_text = generate_sniper_post_content(potd_leg)
 
-    # --- Post (card image is always attached in sniper mode) ---
-    _post_to_bluesky(post_text, card_path, dry_run, db_ids_to_update=db_ids_to_update)
+    _post_to_bluesky(post_text, image_paths, dry_run, db_ids_to_update=db_ids_to_update)
 
 
 def _post_to_bluesky(
     post_text: str,
-    image_path: "os.PathLike | None",
+    image_paths: list[Path],
     dry_run: bool,
     *,
     db_ids_to_update: list[str] | None = None,
@@ -106,8 +150,8 @@ def _post_to_bluesky(
     if dry_run:
         print("\n🚫 DRY RUN MODE ENABLED. SKIPPING UPLOAD.")
         print(f"📝 Draft Post:\n{post_text}")
-        if image_path:
-            print(f"🖼️  Image: {image_path}")
+        if image_paths:
+            print(f"🖼️  Images: {', '.join(str(p) for p in image_paths)}")
         print("✅ Dry run complete.\n")
         return
 
@@ -116,22 +160,29 @@ def _post_to_bluesky(
         client = Client()
         client.login(config.BOT_HANDLE, config.APP_PASSWORD)
 
-        if image_path and os.path.exists(image_path):
-            with open(image_path, "rb") as f:
-                img_data = f.read()
-            upload = client.upload_blob(img_data)
+        blobs = []
+        for img_path in image_paths:
+            if img_path and os.path.exists(img_path):
+                with open(img_path, "rb") as f:
+                    img_data = f.read()
+                upload = client.upload_blob(img_data)
+                blobs.append(upload.blob)
+
+        if blobs:
+            images = [
+                models.AppBskyEmbedImages.Image(
+                    alt="FadeGoblin sports betting visual", image=blob
+                )
+                for blob in blobs
+            ]
             client.send_post(
                 text=post_text,
-                embed=models.AppBskyEmbedImages.Main(
-                    images=[
-                        models.AppBskyEmbedImages.Image(
-                            alt="FadeGoblin EV Board — today's +EV plays",
-                            image=upload.blob,
-                        )
-                    ]
-                ),
+                embed=models.AppBskyEmbedImages.Main(images=images),
             )
-            os.remove(image_path)
+            # Cleanup
+            for img_path in image_paths:
+                if os.path.exists(img_path):
+                    os.remove(img_path)
         else:
             client.send_post(text=post_text)
 

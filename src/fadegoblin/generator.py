@@ -140,7 +140,7 @@ def generate_sniper_post_content(potd_leg: dict[str, Any]) -> str:
     # Append the compact POTD ticket line
     final_post = (
         f"👺 {quote}\n\n"
-        f"⭐ POTD: {potd_leg['pick']} ML {potd_leg['odds']} | Edge: {edge_str}\n"
+        f"⭐ POTD: {potd_leg['pick']} ML {potd_leg['odds']}\n"
         f"Full card ⬇️"
     )
 

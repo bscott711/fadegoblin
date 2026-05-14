@@ -88,11 +88,11 @@ def render_bet_card(legs: list[dict], potd_index: int) -> Path:
     )
 
     # ── Column headers ────────────────────────────────────────────────
-    col_x = {"game": PADDING + 8, "pick": 380, "odds": 500, "edge": 610}
+    col_x = {"game": PADDING + 8, "pick": 420, "odds": 620}
 
     col_y = table_top + 8
     for label, x in [("MATCHUP", col_x["game"]), ("PICK", col_x["pick"]),
-                     ("ODDS", col_x["odds"]), ("EDGE", col_x["edge"])]:
+                     ("ODDS", col_x["odds"])]:
         draw.text((x, col_y), label, fill=TEXT_DIM, font=font_col)
 
     draw.line(
@@ -127,10 +127,6 @@ def render_bet_card(legs: list[dict], potd_index: int) -> Path:
 
         # Odds
         draw.text((col_x["odds"], text_y), str(leg["odds"]), fill=TEXT_WHITE, font=font_row)
-
-        # Edge
-        edge_str = f"+{leg['edge']}%" if leg["edge"] > 0 else f"{leg['edge']}%"
-        draw.text((col_x["edge"], text_y), edge_str, fill=TEXT_EDGE, font=font_edge)
 
         # POTD label
         if is_potd:
