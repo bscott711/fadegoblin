@@ -128,11 +128,11 @@ def _post_to_socials(
     success_twitter = False
 
     # --- 1. Post to Bluesky ---
-    if config.BSKY_HANDLE and config.BSKY_PASSWORD:
+    if config.BOT_HANDLE and config.APP_PASSWORD:
         try:
             print("Connecting to Bluesky...")
             client = Client()
-            client.login(config.BSKY_HANDLE, config.BSKY_PASSWORD)
+            client.login(config.BOT_HANDLE, config.APP_PASSWORD)
 
             blobs = []
             for img_path in image_paths:
