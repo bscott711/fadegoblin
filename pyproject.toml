@@ -12,6 +12,7 @@ dependencies = [
     "requests>=2.32.5",
     "pillow>=11.0.0",
     "sqlalchemy>=2.0.47",
+    "tweepy>=4.15.0",
 ]
 
 [project.scripts]

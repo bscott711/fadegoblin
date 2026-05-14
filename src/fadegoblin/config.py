@@ -5,29 +5,43 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BOT_HANDLE = os.getenv("BOT_HANDLE")
-APP_PASSWORD = os.getenv("APP_PASSWORD")
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-ODDS_API_KEY = os.getenv("ODDS_API_KEY") or os.getenv("API__ODDS_API_KEY")
+# --- Directories ---
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ASSETS_DIR = Path(__file__).resolve().parent / "assets"
+
+# --- Database ---
+# Supports both DATABASE_URL (Standard) and DATABASE__URL (AlgoMLB compat)
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DATABASE__URL")
 
-TEXT_ONLY_ODDS = 0.1
-BASE_DIR = Path(__file__).resolve().parent.parent
+# --- Bluesky Credentials ---
+BSKY_HANDLE = os.getenv("BOT_HANDLE")
+BSKY_PASSWORD = os.getenv("APP_PASSWORD")
 
+# --- Twitter/X Credentials ---
+TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
+TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
+TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
+TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
-def validate_config() -> None:
-    missing = []
-    if not BOT_HANDLE:
-        missing.append("BOT_HANDLE")
-    if not APP_PASSWORD:
-        missing.append("APP_PASSWORD")
-    if not ODDS_API_KEY:
-        missing.append("ODDS_API_KEY")
-    if not OPENROUTER_API_KEY:
-        missing.append("OPENROUTER_API_KEY")
+# --- LLM / Image Generation ---
+POLLINATIONS_AUTH = os.getenv("POLLINATIONS_AUTH")
 
-    if missing:
-        raise ValueError(
-            f"Missing required environment variables: {', '.join(missing)}"
-        )
+# --- Tuning ---
+TEXT_ONLY_ODDS = 0.05  # 5% chance of no image
+
+def validate_config():
+    """Ensures critical environment variables are set."""
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL must be set.")
+    
+    # We require at least one social target
+    bsky_ready = all([BSKY_HANDLE, BSKY_PASSWORD])
+    twitter_ready = all([TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET])
+    
+    if not bsky_ready and not twitter_ready:
+        raise ValueError("At least one set of social credentials (Bluesky or Twitter) must be set.")
+    
+    if bsky_ready:
+        print(f"✅ Bluesky configured as @{BSKY_HANDLE}")
+    if twitter_ready:
+        print(f"✅ Twitter/X configured (Keys found)")
