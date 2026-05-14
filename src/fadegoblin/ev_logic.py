@@ -89,7 +89,9 @@ def mark_bets_placed(pick_ids: list[str]) -> None:
         for pid in pick_ids:
             # Updates AlgoMLB's bankroll_ledger status
             conn.execute(
-                text("UPDATE bankroll_ledger SET status = 'PLACED' WHERE transaction_id = :pid"),
+                text(
+                    "UPDATE bankroll_ledger SET status = 'PLACED' WHERE transaction_id = :pid"
+                ),
                 {"pid": pid},
             )
         conn.commit()
