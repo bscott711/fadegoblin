@@ -14,11 +14,48 @@ def decimal_to_american(decimal_odds: float) -> str:
         return str(american)
 
 
+MLB_ABBREVIATIONS = {
+    "Arizona Diamondbacks": "ARI",
+    "Atlanta Braves": "ATL",
+    "Baltimore Orioles": "BAL",
+    "Boston Red Sox": "BOS",
+    "Chicago Cubs": "CHC",
+    "Chicago White Sox": "CHW",
+    "Cincinnati Reds": "CIN",
+    "Cleveland Guardians": "CLE",
+    "Colorado Rockies": "COL",
+    "Detroit Tigers": "DET",
+    "Houston Astros": "HOU",
+    "Kansas City Royals": "KCR",
+    "Los Angeles Angels": "LAA",
+    "Los Angeles Dodgers": "LAD",
+    "Miami Marlins": "MIA",
+    "Milwaukee Brewers": "MIL",
+    "Minnesota Twins": "MIN",
+    "New York Mets": "NYM",
+    "New York Yankees": "NYY",
+    "Oakland Athletics": "OAK",
+    "Philadelphia Phillies": "PHI",
+    "Pittsburgh Pirates": "PIT",
+    "San Diego Padres": "SDP",
+    "San Francisco Giants": "SFG",
+    "Seattle Mariners": "SEA",
+    "St. Louis Cardinals": "STL",
+    "Tampa Bay Rays": "TBR",
+    "Texas Rangers": "TEX",
+    "Toronto Blue Jays": "TOR",
+    "Washington Nationals": "WSH",
+    "Athletics": "OAK",
+    "Guardians": "CLE",
+}
+
+
 def abbreviate_team(name: str) -> str:
-    """
-    Converts single words to 3 letters ('Arsenal' -> 'ARS')
-    and CamelCase to acronyms ('AstonVilla' -> 'AV', 'BrightonandHoveAlbion' -> 'BHA').
-    """
+    """Uses MLB mapping for known teams, falls back to uppers/prefix."""
+    if name in MLB_ABBREVIATIONS:
+        return MLB_ABBREVIATIONS[name]
+
+    # Fallback for non-MLB or new names
     uppers = [char for char in name if char.isupper()]
     if len(uppers) > 1:
         return "".join(uppers)

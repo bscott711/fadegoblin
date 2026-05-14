@@ -9,8 +9,8 @@ BOT_HANDLE = os.getenv("BOT_HANDLE")
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-ODDS_API_KEY = os.getenv("ODDS_API_KEY")
-DATABASE_URL = os.getenv("DATABASE_URL")
+ODDS_API_KEY = os.getenv("ODDS_API_KEY") or os.getenv("API__ODDS_API_KEY")
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DATABASE__URL")
 
 TEXT_ONLY_ODDS = 0.1
 BASE_DIR = Path(__file__).resolve().parent.parent
