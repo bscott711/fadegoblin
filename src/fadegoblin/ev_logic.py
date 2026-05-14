@@ -50,8 +50,8 @@ def get_sniper_bets() -> tuple[list[dict], list[str]]:
     if df.empty:
         return [], []
 
-    # ONLY GRAB THE TOP BET (1 EV Bet per Post) based on AlgoMLB's calculated edge
-    df = df.sort_values(by="ev", ascending=False).head(1)
+    # Return ALL +EV bets sorted by edge, not just one
+    df = df.sort_values(by="ev", ascending=False)
 
     formatted_legs = []
     db_ids_to_update = []
@@ -72,6 +72,7 @@ def get_sniper_bets() -> tuple[list[dict], list[str]]:
                 "game": f"{away} @ {home}",
                 "pick": pick_name,
                 "odds": decimal_to_american(row["dec_odds"]),
+                "edge": round(float(row["ev"]) * 100, 1),
             }
         )
         db_ids_to_update.append(str(row["id"]))

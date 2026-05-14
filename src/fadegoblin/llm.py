@@ -31,7 +31,7 @@ def get_openrouter_headers() -> dict[str, str]:
 def _make_openrouter_request(prompt: str, attempt: int) -> requests.Response:
     """Helper to make the POST request to the OpenRouter LLM API."""
     payload = {
-        "model": "nvidia/llama-3.1-nemotron-70b-instruct:free",
+        "model": "nvidia/nemotron-3-super",
         "messages": [{"role": "user", "content": prompt}],
     }
     return requests.post(
