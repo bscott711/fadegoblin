@@ -39,51 +39,65 @@ def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
         return ImageFont.load_default()
 
 
-def render_bet_card(legs: list[dict], potd_index: int) -> Path:
+def render_bet_card(legs: list[dict], potd_index: int, background_path: Path | None = None) -> Path:
     """
-    Renders all +EV legs onto a dark-themed card image.
-
-    Parameters
-    ----------
-    legs : list[dict]
-        Each dict has keys: game, pick, odds, edge.
-    potd_index : int
-        Index into ``legs`` for the Play of the Day row.
-
-    Returns
-    -------
-    Path
-        Path to the saved PNG.
+    Renders all +EV legs onto a dark-themed card image, optionally on a background.
     """
     num_rows = len(legs)
-    table_top = HEADER_HEIGHT + 10
     col_header_h = 32
-    table_body_top = table_top + col_header_h
-    card_height = table_body_top + (num_rows * ROW_HEIGHT) + FOOTER_HEIGHT + PADDING
+    
+    # Base table height calculation
+    base_table_height = HEADER_HEIGHT + 10 + col_header_h + (num_rows * ROW_HEIGHT) + FOOTER_HEIGHT + PADDING
+    
+    if background_path and background_path.exists():
+        # Load and resize background to standard width
+        bg_img = Image.open(background_path).convert("RGB")
+        # Scale to width while maintaining aspect ratio
+        target_h = max(1024, base_table_height + 200)
+        bg_img = bg_img.resize((CARD_WIDTH, target_h), Image.Resampling.LANCZOS)
+        img = bg_img
+        card_height = target_h
+    else:
+        img = Image.new("RGB", (CARD_WIDTH, base_table_height), BG_COLOR)
+        card_height = base_table_height
 
-    img = Image.new("RGB", (CARD_WIDTH, card_height), BG_COLOR)
     draw = ImageDraw.Draw(img)
+    
+    # If we have a background, we'll draw the table in a rounded box at the bottom
+    if background_path:
+        table_x1 = PADDING // 2
+        table_x2 = CARD_WIDTH - (PADDING // 2)
+        table_y2 = card_height - PADDING
+        table_y1 = table_y2 - base_table_height + FOOTER_HEIGHT + (PADDING // 2)
+        
+        draw.rounded_rectangle([table_x1, table_y1, table_x2, table_y2], radius=15, fill=(10, 10, 15, 230))
+        y_offset = table_y1
+    else:
+        y_offset = 0
+
+    table_top = y_offset + HEADER_HEIGHT + 10
+    table_body_top = table_top + col_header_h
 
     font_title = _load_font(26)
     font_date = _load_font(14)
     font_col = _load_font(13)
     font_row = _load_font(16)
-    font_edge = _load_font(15)
     font_potd_label = _load_font(12)
     font_footer = _load_font(12)
 
     # ── Header ────────────────────────────────────────────────────────
-    draw.rectangle([(0, 0), (CARD_WIDTH, HEADER_HEIGHT)], fill=HEADER_BG)
+    if not background_path:
+        draw.rectangle([(0, 0), (CARD_WIDTH, HEADER_HEIGHT)], fill=HEADER_BG)
 
-    title = "🎯  FADEGOBLIN EV BOARD"
-    draw.text((PADDING, 20), title, fill=ACCENT_GREEN, font=font_title)
+    title = "💚  THE GOBLIN'S MANIC SLIP"
+    draw.text((PADDING, y_offset + 20), title, fill=ACCENT_GREEN, font=font_title)
 
     date_str = datetime.now().strftime("%B %d, %Y")
-    draw.text((PADDING, 56), date_str, fill=TEXT_DIM, font=font_date)
+    draw.text((PADDING, y_offset + 56), date_str, fill=TEXT_DIM, font=font_date)
 
     # Subtle accent line under header
     draw.rectangle(
-        [(PADDING, HEADER_HEIGHT - 3), (CARD_WIDTH - PADDING, HEADER_HEIGHT - 1)],
+        [(PADDING, y_offset + HEADER_HEIGHT - 3), (CARD_WIDTH - PADDING, y_offset + HEADER_HEIGHT - 1)],
         fill=ACCENT_GREEN,
     )
 
@@ -147,10 +161,10 @@ def render_bet_card(legs: list[dict], potd_index: int) -> Path:
             )
 
     # ── Footer ────────────────────────────────────────────────────────
-    footer_y = table_body_top + num_rows * ROW_HEIGHT + 12
+    footer_y = card_height - FOOTER_HEIGHT
     draw.text(
         (PADDING, footer_y),
-        "@fadegoblin.bsky.social  •  powered by AlgoMLB",
+        "@fadegoblin.bsky.social  •  AlgoMLB",
         fill=TEXT_DIM,
         font=font_footer,
     )

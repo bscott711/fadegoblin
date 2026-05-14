@@ -89,49 +89,19 @@ def _run_sniper(dry_run: bool) -> None:
     potd_index = random.randint(0, len(all_legs) - 1)
     potd_leg = all_legs[potd_index]
 
-    # 1. Render the bet card (transparent PNG)
-    card_path = render_bet_card(all_legs, potd_index)
-
-    # 2. Generate Goblin background image
+    # 1. Generate Goblin background image
     prompt = generate_goblin_prompt()
     bg_target_path = config.BASE_DIR / "temp_bg.jpg"
     goblin_bg_path = download_goblin_image(prompt, bg_target_path)
 
-    image_paths = []
-    if goblin_bg_path and card_path:
-        # 3. Create the composite overlay
-        try:
-            print("🎨 Creating composite overlay image...")
-            bg_img = Image.open(goblin_bg_path).convert("RGBA")
-            card_img = Image.open(card_path).convert("RGBA")
+    # 2. Render the bet card (overlayed on background)
+    final_path = render_bet_card(all_legs, potd_index, background_path=goblin_bg_path)
 
-            # Position: bottom-centered with a small margin
-            bg_w, bg_h = bg_img.size
-            card_w, card_h = card_img.size
-            
-            x = (bg_w - card_w) // 2
-            y = bg_h - card_h - 20 # 20px margin from bottom
+    image_paths = [final_path]
 
-            # Composite
-            combined = Image.new("RGBA", bg_img.size)
-            combined.paste(bg_img, (0, 0))
-            combined.alpha_composite(card_img, (x, y))
-
-            # Save final
-            final_path = config.BASE_DIR / "temp_sniper_post.png"
-            combined.convert("RGB").save(final_path, "PNG")
-            image_paths.append(final_path)
-
-            # Cleanup fragments
-            os.remove(goblin_bg_path)
-            os.remove(card_path)
-        except Exception as e:
-            print(f"⚠️ Overlay failed: {e}. Falling back to original paths.")
-            image_paths = [goblin_bg_path, card_path]
-    elif goblin_bg_path:
-        image_paths.append(goblin_bg_path)
-    elif card_path:
-        image_paths.append(card_path)
+    # Cleanup background fragment if it exists separately
+    if goblin_bg_path and os.path.exists(goblin_bg_path) and goblin_bg_path != final_path:
+        os.remove(goblin_bg_path)
 
     # --- Generate unhinged text for the POTD only ---
     post_text = generate_sniper_post_content(potd_leg)
