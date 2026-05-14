@@ -3,7 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from fadegoblin import config
 
@@ -50,12 +50,10 @@ def render_bet_card(legs: list[dict], potd_index: int, background_path: Path | N
     base_table_height = HEADER_HEIGHT + 10 + col_header_h + (num_rows * ROW_HEIGHT) + FOOTER_HEIGHT + PADDING
     
     if background_path and background_path.exists():
-        # Load and resize background to standard width
+        # Load and fit background to card dimensions
         bg_img = Image.open(background_path).convert("RGB")
-        # Scale to width while maintaining aspect ratio
-        target_h = max(1024, base_table_height + 200)
-        bg_img = bg_img.resize((CARD_WIDTH, target_h), Image.Resampling.LANCZOS)
-        img = bg_img
+        target_h = max(1024, base_table_height + 150) # Slightly more breathing room
+        img = ImageOps.fit(bg_img, (CARD_WIDTH, target_h), centering=(0.5, 0.4)) # Lean slightly towards top
         card_height = target_h
     else:
         img = Image.new("RGB", (CARD_WIDTH, base_table_height), BG_COLOR)

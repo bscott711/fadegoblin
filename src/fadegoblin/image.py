@@ -36,7 +36,7 @@ def download_goblin_image(prompt: str, output_path: Path) -> Path | None:
 
     image_url = (
         f"https://gen.pollinations.ai/image/{safe_prompt}"
-        f"?seed={img_seed}&width=768&height=768&nologo=true&model=flux"
+        f"?seed={img_seed}&width=768&height=1024&nologo=true&model=flux"
     )
 
     for attempt in range(3):
