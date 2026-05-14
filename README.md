@@ -7,7 +7,7 @@ FadeGoblin is an "unhinged" sports betting bot for Bluesky. It generates degener
 - **Two Run Modes**:
   - **Degen Mode**: Fetches live games from The Odds API and builds a random 2-4 leg parlay.
   - **Sniper Mode**: Queries a PostgreSQL database (compatible with AlgoMLB/AlgoEPL schemas) to find the highest-edge +EV bet available.
-- **AI Commentary**: Uses OpenRouter (Nvidia Llama 3.1 Nemotron) to generate unhinged, high-energy betting advice.
+- **AI Commentary**: Uses OpenRouter (Nvidia Nemotron 3 Super 120B) to generate unhinged, high-energy betting advice.
 - **AI Art**: Generates custom "betting goblin" visuals via Pollinations.ai (Flux model) based on random action/outfit/style recipes.
 - **Bluesky Integration**: Automatically posts text and images to the AT Protocol (Bluesky).
 - **Smart Ledger Tracking**: Marks bets as `PLACED` in the database to ensure no duplicate posts.
