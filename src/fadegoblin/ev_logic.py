@@ -1,5 +1,6 @@
 import pandas as pd
 from sqlalchemy import create_engine, text
+
 from fadegoblin import config
 
 
@@ -24,21 +25,23 @@ def abbreviate_team(name: str) -> str:
     return name[:3].upper()
 
 
-def get_sniper_bets() -> tuple[list[dict], list[int]]:
-    """Fetches the SINGLE best PENDING bet from DB that hasn't started yet."""
+def get_sniper_bets() -> tuple[list[dict], list[str]]:
+    """Fetches the SINGLE best PENDING bet from AlgoMLB DB that hasn't started yet."""
     if not config.DATABASE_URL:
         print("⚠️ DATABASE_URL not set. Cannot run EV Sniper.")
         return [], []
 
     engine = create_engine(config.DATABASE_URL)
 
+    # Adapted to AlgoMLB's bankroll_ledger and game_results schema
     query = text("""
-        SELECT p.id, p.match_id, p.outcome, p.market_type, p.odds as dec_odds, p.ev,
-               m.home_team, m.away_team, m.date_time_utc
-        FROM daily_picks p
-        JOIN matches m ON p.match_id = m.match_id
-        WHERE p.status = 'PENDING'
-        AND m.date_time_utc > NOW()
+        SELECT b.transaction_id as id, b.game_id as match_id, b.selection as outcome,
+               'ML' as market_type, b.odds as dec_odds, b.edge as ev,
+               g.home_team, g.away_team, g.game_datetime as date_time_utc
+        FROM bankroll_ledger b
+        JOIN game_results g ON b.game_id = g.game_id
+        WHERE b.status = 'PENDING'
+        AND g.game_datetime > NOW()
     """)
 
     with engine.connect() as conn:
@@ -47,7 +50,7 @@ def get_sniper_bets() -> tuple[list[dict], list[int]]:
     if df.empty:
         return [], []
 
-    # ONLY GRAB THE TOP BET (1 EV Bet per Post)
+    # ONLY GRAB THE TOP BET (1 EV Bet per Post) based on AlgoMLB's calculated edge
     df = df.sort_values(by="ev", ascending=False).head(1)
 
     formatted_legs = []
@@ -58,21 +61,11 @@ def get_sniper_bets() -> tuple[list[dict], list[int]]:
         home = abbreviate_team(row["home_team"])
         away = abbreviate_team(row["away_team"])
 
-        # Handle the different markets properly with shortened names
-        if row["market_type"] == "1X2":
-            if row["outcome"] == "H":
-                pick_name = home
-            elif row["outcome"] == "A":
-                pick_name = away
-            else:
-                pick_name = "Draw"
-        elif row["market_type"] == "OU2.5":
-            if row["outcome"] == "O":
-                pick_name = "O 2.5G"
-            else:
-                pick_name = "U 2.5G"
-        else:
-            pick_name = str(row["outcome"])
+        pick_name = str(row["outcome"])
+        if pick_name == row["home_team"]:
+            pick_name = home
+        elif pick_name == row["away_team"]:
+            pick_name = away
 
         formatted_legs.append(
             {
@@ -81,22 +74,22 @@ def get_sniper_bets() -> tuple[list[dict], list[int]]:
                 "odds": decimal_to_american(row["dec_odds"]),
             }
         )
-        db_ids_to_update.append(row["id"])
+        db_ids_to_update.append(str(row["id"]))
 
     return formatted_legs, db_ids_to_update
 
 
-def mark_bets_placed(pick_ids: list[int]) -> None:
-    """Updates the database so we don't tweet the same bet twice."""
+def mark_bets_placed(pick_ids: list[str]) -> None:
+    """Updates the AlgoMLB ledger so we don't tweet the same bet twice."""
     if not pick_ids or not config.DATABASE_URL:
         return
 
     engine = create_engine(config.DATABASE_URL)
     with engine.connect() as conn:
         for pid in pick_ids:
-            # Clean, fast primary key update
+            # Updates AlgoMLB's bankroll_ledger status
             conn.execute(
-                text("UPDATE daily_picks SET status = 'PLACED' WHERE id = :pid"),
+                text("UPDATE bankroll_ledger SET status = 'PLACED' WHERE transaction_id = :pid"),
                 {"pid": pid},
             )
         conn.commit()

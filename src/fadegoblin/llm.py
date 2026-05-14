@@ -9,36 +9,46 @@ from fadegoblin import config
 
 
 def get_auth_headers() -> dict[str, str]:
-    """Generate authentication headers for Pollinations API."""
+    """Generate authentication headers for Pollinations API (preserved for image.py)."""
     headers = {"Content-Type": "application/json"}
     if config.POLLINATIONS_API_KEY:
         headers["Authorization"] = f"Bearer {config.POLLINATIONS_API_KEY}"
     return headers
 
 
-def _make_pollinations_request(prompt: str, attempt: int) -> requests.Response:
-    """Helper to make the POST request to the LLM API."""
-    seed = int(time.time()) + attempt
+def get_openrouter_headers() -> dict[str, str]:
+    """Generate authentication headers for OpenRouter API."""
+    headers = {
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/bscott711/fadegoblin",
+        "X-Title": "FadeGoblin",
+    }
+    if config.OPENROUTER_API_KEY:
+        headers["Authorization"] = f"Bearer {config.OPENROUTER_API_KEY}"
+    return headers
+
+
+def _make_openrouter_request(prompt: str, attempt: int) -> requests.Response:
+    """Helper to make the POST request to the OpenRouter LLM API."""
     payload = {
-        "model": "openai",
+        "model": "nvidia/llama-3.1-nemotron-70b-instruct:free",
         "messages": [{"role": "user", "content": prompt}],
-        "seed": seed,
     }
     return requests.post(
-        "https://gen.pollinations.ai/v1/chat/completions",
-        headers=get_auth_headers(),
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers=get_openrouter_headers(),
         json=payload,
         timeout=180,
     )
 
 
 def get_ai_text(prompt: str, retries: int = 3) -> str | None:
-    """Generates text from the Pollinations LLM API with retries."""
+    """Generates text from the OpenRouter LLM API with retries."""
     retry_delays = [60, 180, 300]
 
     for attempt in range(retries):
         try:
-            response = _make_pollinations_request(prompt, attempt)
+            response = _make_openrouter_request(prompt, attempt)
 
             if response.status_code == 200:
                 data = response.json()
@@ -81,12 +91,12 @@ def get_ai_text(prompt: str, retries: int = 3) -> str | None:
 
 
 def get_ai_json(prompt: str, retries: int = 3) -> dict[str, Any] | None:
-    """Generates JSON from the Pollinations LLM API with retries."""
+    """Generates JSON from the OpenRouter LLM API with retries."""
     retry_delays = [60, 180, 300]
 
     for attempt in range(retries):
         try:
-            response = _make_pollinations_request(prompt, attempt)
+            response = _make_openrouter_request(prompt, attempt)
 
             if response.status_code == 200:
                 data = response.json()
