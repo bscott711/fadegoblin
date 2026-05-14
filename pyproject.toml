@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-bot = "src.main:main"
+bot = "fadegoblin.main:main"
 
 [dependency-groups]
 dev = [
@@ -29,4 +29,4 @@ build-backend = "hatchling.build"
 package = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["fadegoblin"]

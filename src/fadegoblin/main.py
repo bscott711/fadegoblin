@@ -5,13 +5,13 @@ from datetime import datetime
 
 from atproto import Client, models
 
-from . import config
-from .betting import build_parlay
-from .ev_logic import get_sniper_bets, mark_bets_placed  # [NEW]
-from .generator import generate_post_content
-from .image import download_goblin_image, generate_goblin_prompt
-from .odds import get_live_games
-from .prompts import FALLBACK_QUOTES
+from fadegoblin import config
+from fadegoblin.betting import build_parlay
+from fadegoblin.ev_logic import get_sniper_bets, mark_bets_placed  # [NEW]
+from fadegoblin.generator import generate_post_content
+from fadegoblin.image import download_goblin_image, generate_goblin_prompt
+from fadegoblin.odds import get_live_games
+from fadegoblin.prompts import FALLBACK_QUOTES
 
 
 def main() -> None:

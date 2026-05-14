@@ -2,8 +2,8 @@ import random
 from datetime import datetime
 from typing import Any
 
-from .llm import get_ai_text
-from .prompts import FALLBACK_QUOTES, PERSONAS
+from fadegoblin.llm import get_ai_text
+from fadegoblin.prompts import FALLBACK_QUOTES, PERSONAS
 
 
 def generate_post_content(

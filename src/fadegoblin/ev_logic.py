@@ -1,6 +1,6 @@
 import pandas as pd
 from sqlalchemy import create_engine, text
-from . import config
+from fadegoblin import config
 
 
 def decimal_to_american(decimal_odds: float) -> str:
