@@ -3,7 +3,7 @@ from typing import Any
 
 import requests
 
-from . import config
+from fadegoblin import config
 
 ACTIVE_LEAGUES = [
     "soccer_epl",

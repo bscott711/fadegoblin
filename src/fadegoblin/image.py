@@ -5,8 +5,8 @@ from pathlib import Path
 
 import requests
 
-from .llm import get_auth_headers
-from .prompts import ACTIONS, BACKGROUNDS, CHARACTERS, OUTFITS, STYLES
+from fadegoblin.llm import get_auth_headers
+from fadegoblin.prompts import ACTIONS, BACKGROUNDS, CHARACTERS, OUTFITS, STYLES
 
 
 def generate_goblin_prompt() -> str:
