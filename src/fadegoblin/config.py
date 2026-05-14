@@ -17,11 +17,9 @@ DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DATABASE__URL")
 BOT_HANDLE = os.getenv("BOT_HANDLE")
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 
-# --- Twitter/X Credentials ---
-TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
-TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET")
-TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
-TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
+# --- Twitter/X Credentials (Browser Automation) ---
+TWITTER_USERNAME = os.getenv("TWITTER_USERNAME")
+TWITTER_PASSWORD = os.getenv("TWITTER_PASSWORD")
 
 # --- LLM / Image Generation ---
 POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_AUTH") or os.getenv("POLLINATIONS_API_KEY")
@@ -37,7 +35,7 @@ def validate_config():
     
     # We require at least one social target
     bsky_ready = all([BOT_HANDLE, APP_PASSWORD])
-    twitter_ready = all([TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET])
+    twitter_ready = all([TWITTER_USERNAME, TWITTER_PASSWORD])
     
     if not bsky_ready and not twitter_ready:
         raise ValueError("At least one set of social credentials (Bluesky or Twitter) must be set.")
@@ -45,4 +43,4 @@ def validate_config():
     if bsky_ready:
         print(f"✅ Bluesky configured as @{BOT_HANDLE}")
     if twitter_ready:
-        print(f"✅ Twitter/X configured (Keys found)")
+        print(f"✅ Twitter/X browser automation configured for @{TWITTER_USERNAME}")

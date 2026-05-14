@@ -6,7 +6,7 @@ from pathlib import Path
 
 from atproto import Client, models
 
-from fadegoblin import config
+from fadegoblin import config, browser_twitter
 from fadegoblin.betting import build_parlay
 from fadegoblin.card import render_bet_card
 from fadegoblin.ev_logic import get_sniper_bets, mark_bets_placed
@@ -70,7 +70,7 @@ def _run_degen(dry_run: bool) -> None:
         if img_path:
             image_paths.append(img_path)
 
-    _post_to_bluesky(post_text, image_paths, dry_run)
+    _post_to_socials(post_text, image_paths, dry_run)
 
 
 def _run_sniper(dry_run: bool) -> None:
@@ -105,17 +105,17 @@ def _run_sniper(dry_run: bool) -> None:
     # --- Generate unhinged text for the POTD only ---
     post_text = generate_sniper_post_content(potd_leg)
 
-    _post_to_bluesky(post_text, image_paths, dry_run, db_ids_to_update=db_ids_to_update)
+    _post_to_socials(post_text, image_paths, dry_run, db_ids_to_update=db_ids_to_update)
 
 
-def _post_to_bluesky(
+def _post_to_socials(
     post_text: str,
     image_paths: list[Path],
     dry_run: bool,
     *,
     db_ids_to_update: list[str] | None = None,
 ) -> None:
-    """Handles the upload to Bluesky and optional DB update."""
+    """Handles the upload to Bluesky and Twitter/X (via Playwright)."""
     if dry_run:
         print("\n🚫 DRY RUN MODE ENABLED. SKIPPING UPLOAD.")
         print(f"📝 Draft Post:\n{post_text}")
@@ -124,44 +124,60 @@ def _post_to_bluesky(
         print("✅ Dry run complete.\n")
         return
 
-    try:
-        print("Connecting to Bluesky...")
-        client = Client()
-        client.login(config.BOT_HANDLE, config.APP_PASSWORD)
+    success_bsky = False
+    success_twitter = False
 
-        blobs = []
-        for img_path in image_paths:
-            if img_path and os.path.exists(img_path):
-                with open(img_path, "rb") as f:
-                    img_data = f.read()
-                upload = client.upload_blob(img_data)
-                blobs.append(upload.blob)
+    # --- 1. Post to Bluesky ---
+    if config.BOT_HANDLE and config.APP_PASSWORD:
+        try:
+            print("Connecting to Bluesky...")
+            client = Client()
+            client.login(config.BOT_HANDLE, config.APP_PASSWORD)
 
-        if blobs:
-            images = [
-                models.AppBskyEmbedImages.Image(
-                    alt="FadeGoblin sports betting visual", image=blob
+            blobs = []
+            for img_path in image_paths:
+                if img_path and os.path.exists(img_path):
+                    with open(img_path, "rb") as f:
+                        img_data = f.read()
+                    upload = client.upload_blob(img_data)
+                    blobs.append(upload.blob)
+
+            if blobs:
+                images = [
+                    models.AppBskyEmbedImages.Image(
+                        alt="FadeGoblin sports betting visual", image=blob
+                    )
+                    for blob in blobs
+                ]
+                client.send_post(
+                    text=post_text,
+                    embed=models.AppBskyEmbedImages.Main(images=images),
                 )
-                for blob in blobs
-            ]
-            client.send_post(
-                text=post_text,
-                embed=models.AppBskyEmbedImages.Main(images=images),
-            )
-        else:
-            client.send_post(text=post_text)
+            else:
+                client.send_post(text=post_text)
 
-        print("✅ Successfully posted to Bluesky!")
+            print("✅ Successfully posted to Bluesky!")
+            success_bsky = True
+        except Exception as e:
+            print(f"❌ Error posting to Bluesky: {e}")
 
-        # Mark DB bets as PLACED only after a successful post
-        if db_ids_to_update:
-            mark_bets_placed(db_ids_to_update)
-            print(f"✅ Marked {len(db_ids_to_update)} EV bets as PLACED in database.")
-
-    except Exception as e:
-        print(f"❌ Error posting to Bluesky: {e}")
+    # --- 2. Post to Twitter/X (Browser Automation) ---
+    if config.TWITTER_USERNAME and config.TWITTER_PASSWORD:
+        try:
+            print("Starting Twitter browser automation...")
+            img_path = image_paths[0] if image_paths else None
+            browser_twitter.post_to_twitter_browser(post_text, img_path)
+            # We assume success if no exception, though Playwright might fail silently
+            success_twitter = True 
+        except Exception as e:
+            print(f"❌ Error during Twitter browser automation: {e}")
 
     # Cleanup images
     for img_path in image_paths:
         if os.path.exists(img_path):
             os.remove(img_path)
+
+    # Mark DB bets as PLACED if either succeeded
+    if (success_bsky or success_twitter) and db_ids_to_update:
+        mark_bets_placed(db_ids_to_update)
+        print(f"✅ Marked {len(db_ids_to_update)} EV bets as PLACED in database.")
