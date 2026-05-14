@@ -6,7 +6,7 @@ from pathlib import Path
 
 from atproto import Client, models
 
-from fadegoblin import config, twitter
+from fadegoblin import config
 from fadegoblin.betting import build_parlay
 from fadegoblin.card import render_bet_card
 from fadegoblin.ev_logic import get_sniper_bets, mark_bets_placed
