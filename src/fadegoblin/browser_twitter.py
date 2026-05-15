@@ -1,81 +1,127 @@
+"""Post to Twitter/X via Playwright using pre-authenticated cookies.
+
+Skips login entirely by injecting saved session cookies.
+Run with:  xvfb-run --auto-servernum -- python this_script.py
+"""
+
+import json
+import random
 import sys
+import time
 from pathlib import Path
+
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
+
 from fadegoblin import config
 
-def post_to_twitter_browser(tweet_text: str, image_path: Path | None = None) -> None:
-    """Automate posting to Twitter using Playwright with Google Chrome."""
-    username = config.TWITTER_USERNAME
-    password = config.TWITTER_PASSWORD
+COOKIES_PATH = Path("/home/opc/AlgoMLB/twitter_cookies.json")
 
-    if not username or not password:
-        print("⚠️ Twitter credentials missing. Skipping X browser post.")
+STEALTH_JS = """
+Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+window.chrome = { runtime: {} };
+"""
+
+
+def _rand_sleep(lo: float = 0.8, hi: float = 2.0) -> None:
+    time.sleep(random.uniform(lo, hi))
+
+
+def post_to_twitter_browser(
+    tweet_text: str,
+    image_path: Path | None = None,
+) -> None:
+    """Post a tweet by injecting authenticated cookies — no login needed."""
+
+    # Load cookies
+    cookies_file = COOKIES_PATH
+    if not cookies_file.exists():
+        print("⚠️  No twitter_cookies.json found. Skipping X post.")
         return
 
+    with open(cookies_file) as f:
+        cookies = json.load(f)
+
     with sync_playwright() as p:
-        # headless=False is less likely to trigger immediate bot detection during login
-        # In a server environment, this requires a display or xvfb
-        print(f"🐦 Launching browser for @{username}...")
-        browser = p.chromium.launch(headless=True) # Forced headless for server compat, user-agent helps
-        context = browser.new_context(
+        print("🐦 Launching browser with saved session …")
+
+        browser = p.chromium.launch(
+            headless=False,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-first-run",
+                "--no-default-browser-check",
+            ],
+        )
+        ctx = browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            )
+                "Chrome/121.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1280, "height": 800},
+            locale="en-US",
         )
-        page = context.new_page()
+        ctx.add_init_script(STEALTH_JS)
+
+        # Inject cookies BEFORE navigating
+        ctx.add_cookies(cookies)
+
+        page = ctx.new_page()
 
         try:
-            print("🐦 Navigating to X login...")
-            page.goto("https://x.com/i/flow/login")
-
-            # Fill Username
-            page.wait_for_selector('input[autocomplete="username"]')
-            page.fill('input[autocomplete="username"]', username)
-            page.click('button:has-text("Next")')
-
-            # Fill Password
-            page.wait_for_selector('input[name="password"]')
-            page.fill('input[name="password"]', password)
-            page.click('button[data-testid="LoginForm_Login_Button"]')
-
-            # Wait for home timeline to ensure login success
-            print("🐦 Waiting for login confirmation...")
-            page.wait_for_selector('[data-testid="primaryColumn"]', timeout=15000)
-
-            # Navigate directly to the compose URL
+            # ── 1. Go straight to compose ────────────────────────────
+            print("🐦 Navigating to compose …")
             page.goto("https://x.com/compose/tweet")
+            _rand_sleep(3, 5)
 
-            # Type the tweet
-            print("🐦 Drafting the Manic Slip...")
-            page.wait_for_selector('[data-testid="tweetTextarea_0"]')
-            page.fill('[data-testid="tweetTextarea_0"]', tweet_text)
+            page.screenshot(path="twitter_debug_compose.png")
 
-            # Upload image if provided
+            # Check if we got redirected to login (cookies expired)
+            if "/login" in page.url or "/flow/login" in page.url:
+                print("❌ Cookies expired — redirected to login. Need fresh cookies.")
+                page.screenshot(path="twitter_error_expired.png")
+                return
+
+            # ── 2. Type the tweet ────────────────────────────────────
+            print("🐦 Drafting tweet …")
+            textarea = page.wait_for_selector(
+                '[data-testid="tweetTextarea_0"]', timeout=15000
+            )
+            textarea.click()
+            _rand_sleep(0.3, 0.6)
+
+            # Tweet box is contenteditable — use insertText for full Unicode support
+            page.keyboard.insert_text(tweet_text)
+
+            _rand_sleep(1, 2)
+            page.screenshot(path="twitter_debug_drafted.png")
+
+            # ── 3. Image upload (optional) ───────────────────────────
             if image_path and image_path.exists():
                 print(f"🐦 Uploading image: {image_path.name}")
-                # X uses a hidden file input for media
-                page.set_input_files('input[data-testid="fileInput"]', str(image_path))
-                # Wait for the image to be processed (look for the remove button as proof it loaded)
-                page.wait_for_selector('[data-testid="attachments"]', timeout=10000)
+                file_input = page.locator('input[data-testid="fileInput"]')
+                file_input.set_input_files(str(image_path))
+                page.wait_for_selector(
+                    '[data-testid="attachments"]', timeout=20000
+                )
+                _rand_sleep(1, 2)
 
-            # Click post
-            print("🐦 FIRING POST...")
+            # ── 4. Post ──────────────────────────────────────────────
+            print("🐦 POSTING …")
             page.click('[data-testid="tweetButton"]')
-
-            # Wait for the toast notification to confirm sending
-            page.wait_for_selector('[data-testid="toast"]', timeout=10000)
-            print("✅ Tweet posted successfully via browser automation.")
+            page.wait_for_selector('[data-testid="toast"]', timeout=20000)
+            print("✅ Tweet posted successfully!")
 
         except PlaywrightTimeoutError as e:
-            print(
-                f"❌ Automation timed out. DOM may have changed or login blocked: {e}",
-                file=sys.stderr,
-            )
-            # Take a screenshot for debugging if it fails
+            print(f"❌ Timed out: {e}", file=sys.stderr)
             page.screenshot(path="twitter_error.png")
-            print("📸 Screenshot saved as twitter_error.png")
+            print("📸 Screenshot → twitter_error.png")
+        except Exception as e:
+            print(f"❌ Error: {e}", file=sys.stderr)
+            page.screenshot(path="twitter_error.png")
+            print("📸 Screenshot → twitter_error.png")
         finally:
             browser.close()
